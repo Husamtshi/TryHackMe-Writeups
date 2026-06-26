@@ -1,4 +1,12 @@
-# Detecting Web Attacks
+# Room: Detecting-Web-Attacks
+
+**Platform:** TryHackMe
+
+**Path:** SOC Level 1
+
+**Status:** Completed
+
+---
 
 ## Objective
 
