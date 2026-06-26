@@ -1,3 +1,13 @@
+# Room: Detecting Web Shells
+
+**Platform:** TryHackMe
+
+**Path:** SOC Level 1
+
+**Status:** Completed
+
+---
+
 # Objective
 
 The objective of this room was to understand how web shells are used by attackers, identify indicators of web shell activity, analyze web server logs, correlate multiple data sources, and use network traffic analysis techniques to detect malicious behavior.
