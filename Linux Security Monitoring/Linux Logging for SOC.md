@@ -2,7 +2,7 @@
 
 **Platform:** TryHackMe
 
-**Path:** Linux Security Monitoring
+**Path:** SOC Level 1
 
 **Status:** Completed
 
