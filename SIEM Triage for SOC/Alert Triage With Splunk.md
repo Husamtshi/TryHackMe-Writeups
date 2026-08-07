@@ -1,8 +1,48 @@
-# Alert Triage with Splunk
+# Room: Alert Triage with Splunk
 
-## Overview
+**Platform:** TryHackMe
 
-This room focuses on the daily responsibilities of a SOC Level 1 analyst when investigating alerts inside a SIEM. The goal is not simply to search logs, but to validate alerts, build context, determine whether the activity is malicious, and decide whether escalation is required.
+**Path:** SOC Level 1
+
+**Status:** Completed
+
+---
+
+# Objective
+
+Learn how to investigate security alerts using **Splunk SIEM** by validating alerts, correlating events across multiple log sources, building attack timelines, and determining whether an alert is a **True Positive** or **False Positive**.
+
+---
+
+# Topics Covered
+
+- Splunk SIEM
+- Alert Triage
+- Linux SSH Brute Force Investigation
+- Windows Scheduled Task Analysis
+- Web Shell Investigation
+- Event Correlation
+- Timeline Analysis
+- Authentication Logs
+- Process Investigation
+- Incident Escalation
+
+---
+
+# What is Alert Triage?
+
+Alert triage is the process of validating security alerts before deciding whether they represent malicious activity.
+
+The objective is to answer questions such as:
+
+- Is the alert legitimate?
+- Which host is affected?
+- Which user performed the activity?
+- What happened before and after the alert?
+- Is this a True Positive or False Positive?
+- Should the incident be escalated?
+
+Rather than trusting the alert immediately, analysts gather evidence from multiple log sources.
 
 ---
 
@@ -41,7 +81,7 @@ The alert shows:
 
 - Internal source IP
 - Linux server
-- Activity occurred during business hours
+- Activity during business hours
 
 The internal IP suggests the attacker may already have access to the internal network or VPN.
 
@@ -63,7 +103,7 @@ Look for:
 - Successful logins
 - Invalid usernames
 
-The presence of many **Invalid user** events often indicates username enumeration before brute force.
+The presence of many **Invalid user** events often indicates username enumeration before a brute-force attack.
 
 ---
 
@@ -113,22 +153,23 @@ Classification:
 
 ✅ **True Positive**
 
-Reason:
+Evidence:
 
-- Username enumeration
-- Hundreds of failed logins
-- Successful authentication afterward
+- Username enumeration.
+- Hundreds of failed login attempts.
+- Successful authentication afterward.
 
 Recommended actions:
 
 - Escalate to SOC L2.
-- Notify Incident Response.
+- Notify the Incident Response team.
 - Reset compromised credentials.
 - Investigate post-authentication activity.
+- Review lateral movement and persistence.
 
 ---
 
-# Scenario 2 – Scheduled Task Investigation
+# Scenario 2 – Windows Scheduled Task Investigation
 
 ## Alert Details
 
@@ -138,11 +179,11 @@ Recommended actions:
 
 ---
 
-## Investigation Strategy
+## Initial Investigation
 
-Never begin with Splunk.
+Never begin directly with Splunk.
 
-Start by understanding:
+Start by understanding the alert context.
 
 ### Host
 
@@ -173,12 +214,12 @@ WIN-H015
 
 ### User Context
 
-Understand:
+Review:
 
 - Department
 - Role
 - Working hours
-- Location
+- Geographic location
 
 Example:
 
@@ -187,9 +228,9 @@ Oliver Thompson
 System Engineer
 ```
 
-A System Engineer creating scheduled tasks is less suspicious than an HR employee doing the same.
+A System Engineer creating scheduled tasks is much less suspicious than an HR employee doing the same.
 
-Context is everything.
+Context is critical before drawing conclusions.
 
 ---
 
@@ -203,8 +244,8 @@ index="win-alert" EventCode=4698 AssessmentTaskOne
 This confirms:
 
 - Task name
-- Host
 - User
+- Host
 - Creation time
 
 ---
@@ -216,30 +257,30 @@ Finding Event ID **4698** is only the beginning.
 Investigate:
 
 - Sysmon Event ID 1 (Process Creation)
-- Event ID 4688
-- Parent Process
+- Windows Event ID 4688
+- Parent process
 - PowerShell execution
 - CMD execution
 - Network connections
 - File creation
-- Registry changes
+- Registry modifications
 - Scheduled task execution
 
-Determine:
+Questions to answer:
 
 - Who created the task?
-- Why?
-- Is the task legitimate?
+- Why was it created?
 - What executable does it launch?
 - Does it establish persistence?
+- Is it part of legitimate administration?
 
 ---
 
-# Scenario 3 – Web Shell Alert
+# Scenario 3 – Web Shell Investigation
 
 A web shell allows attackers to execute commands remotely through a compromised web server.
 
-Common file types:
+Common web shell extensions include:
 
 - .php
 - .asp
@@ -248,14 +289,14 @@ Common file types:
 
 ---
 
-## Indicators
+## Common Indicators
 
 Look for:
 
 - Multiple POST requests
 - Suspicious GET requests
 - Access to newly uploaded scripts
-- Requests returning HTTP 200
+- HTTP 200 responses
 - Unusual User-Agent values
 - Repeated access to the same script
 
@@ -279,50 +320,84 @@ uri_path IN (*.php, *.asp, *.aspx, *.jsp)
 - Identify the suspicious file.
 - Review upload activity.
 - Check web server access logs.
-- Review source IP.
-- Review User-Agent.
+- Review the source IP.
+- Analyze the User-Agent.
 - Correlate with process creation logs.
-- Check for persistence.
+- Look for persistence mechanisms.
 - Investigate possible lateral movement.
 
 ---
 
-# SOC Investigation Workflow
+# Typical SOC Investigation Workflow
 
-Every investigation should follow a structured methodology:
+```
+Alert
+↓
 
-1. Review the alert.
-2. Gather host and user context.
-3. Search related logs.
-4. Build a timeline.
-5. Correlate multiple log sources.
-6. Identify Indicators of Compromise (IOCs).
-7. Determine:
-   - True Positive
-   - False Positive
-8. Escalate when evidence confirms malicious activity.
+Review Alert Details
+↓
+
+Identify User
+
+↓
+
+Identify Host
+
+↓
+
+Search Related Logs
+
+↓
+
+Build Timeline
+
+↓
+
+Correlate Events
+
+↓
+
+Identify Indicators of Compromise (IOCs)
+
+↓
+
+Determine:
+• True Positive
+• False Positive
+
+↓
+
+Escalate if Required
+```
+
+Every investigation should follow a structured methodology instead of relying on a single log entry.
+
+---
+
+# Best Practices
+
+- Never investigate logs without first understanding the alert context.
+- Always gather host and user information before searching.
+- Correlate multiple log sources.
+- Build a complete attack timeline.
+- Validate every alert with supporting evidence.
+- Investigate parent and child processes.
+- Base conclusions on behaviour rather than a single indicator.
 
 ---
 
 # Key Takeaways
 
-- Never investigate logs without first understanding the alert context.
-- Context (host, user, role, timing) is as important as log analysis.
-- Correlation between multiple log sources is essential.
-- Username enumeration often precedes brute-force attacks.
-- A successful login after many failures usually confirms compromise.
-- Event ID 4698 indicates scheduled task creation but requires additional investigation.
-- Web shell alerts should always be correlated with web logs, process creation, and network activity.
-- SOC analysts should base decisions on evidence, not assumptions.
+- Alert triage is about validating alerts before escalating incidents.
+- Context (host, user, role, and timing) is as important as the logs themselves.
+- Username enumeration is often the first stage of an SSH brute-force attack.
+- A successful login after hundreds of failed attempts strongly indicates account compromise.
+- Event ID 4698 confirms scheduled task creation but requires further investigation to determine intent.
+- Web shell investigations should combine web logs, process creation, and network activity.
+- Effective SOC investigations rely on event correlation rather than isolated alerts.
 
 ---
 
-# SOC Analyst Notes
+# SOC Perspective
 
-- Always build context before searching.
-- Correlate multiple log sources.
-- Build a timeline.
-- Investigate parent and child processes.
-- Validate alerts before escalating.
-- Escalate with evidence, not assumptions.
-- Focus on behaviour, not only signatures.
+A SOC analyst's responsibility is not simply to respond to alerts, but to determine their legitimacy through evidence-based investigation. Splunk provides the ability to correlate authentication logs, process creation, scheduled tasks, web activity, and network events into a complete attack timeline. A skilled analyst focuses on context, validates every indicator, and escalates only when sufficient evidence confirms malicious activity.
