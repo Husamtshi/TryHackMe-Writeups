@@ -1,0 +1,248 @@
+# Room: Nmap Live Host Discovery
+
+**Platform:** TryHackMe  
+**Path:** Jr Penetration Tester  
+**Status:** Completed
+
+---
+
+# Objective
+
+Learn to identify live hosts on a target network using Nmap without necessarily performing a port scan. Topics include target specification, ARP, ICMP, TCP, UDP, reverse DNS, and Masscan basics.
+
+---
+
+# Topics Covered
+
+- Nmap target specification
+- Host discovery with `-sn`
+- ARP discovery
+- ICMP Echo, Timestamp, and Address Mask
+- TCP SYN Ping
+- TCP ACK Ping
+- UDP Ping
+- Reverse DNS
+- Custom DNS servers
+- Masscan basics
+
+---
+
+# Specifying Targets
+
+Nmap accepts a single host, multiple targets, an IP range, a subnet, or a file containing targets.
+
+```bash
+# Multiple targets
+nmap MACHINE_IP scanme.nmap.org example.com
+
+# IP range
+nmap 10.11.12.15-20
+
+# Subnet
+nmap MACHINE_IP/30
+
+# Read targets from a file
+nmap -iL list_of_hosts.txt
+```
+
+Use `-sL` to list targets without scanning their ports:
+
+```bash
+nmap -sL TARGETS
+```
+
+Nmap may perform reverse-DNS lookups while listing targets. Add `-n` to disable DNS resolution:
+
+```bash
+nmap -sL -n TARGETS
+```
+
+---
+
+# Host Discovery Only
+
+By default, Nmap performs host discovery and then scans ports on hosts it considers online. Use `-sn` to discover live hosts without performing a port scan.
+
+```bash
+nmap -sn TARGETS
+```
+
+The discovery method can be selected or adjusted with `-PR`, `-PE`, `-PP`, `-PM`, `-PS`, `-PA`, and `-PU`. Results depend on network location, firewall rules, privileges, and the probes used. A host that does not respond is not necessarily offline.
+
+---
+
+# ARP Discovery
+
+ARP discovery is especially useful when scanning hosts on the same local Ethernet/Wi-Fi subnet. A device needs the destination MAC address to deliver local network traffic, so ARP requests can reveal responding hosts.
+
+```bash
+sudo nmap -PR -sn 10.200.6.0/24
+```
+
+- `-PR`: use ARP discovery
+- `-sn`: host discovery only
+
+ARP is generally not routed across networks, so it is not the method for discovering hosts on a remote subnet.
+
+---
+
+# ICMP Discovery
+
+## ICMP Echo
+
+ICMP Echo Requests are the packets commonly used by `ping`. A responding host sends an Echo Reply, but firewalls may block these requests.
+
+```bash
+sudo nmap -PE -sn 10.200.6.0/24
+```
+
+## ICMP Timestamp
+
+Nmap can send ICMP Timestamp Requests and look for Timestamp Replies:
+
+```bash
+sudo nmap -PP -sn TARGETS
+```
+
+## ICMP Address Mask
+
+Nmap can send ICMP Address Mask Requests:
+
+```bash
+sudo nmap -PM -sn TARGETS
+```
+
+These less commonly supported ICMP request types may be filtered or ignored by modern systems. Lack of a reply does not prove the host is down.
+
+---
+
+# TCP Host Discovery
+
+TCP probes can be useful when ICMP is filtered.
+
+## TCP SYN Ping
+
+Nmap sends TCP SYN probes to selected ports. A SYN/ACK may indicate an open port; an RST may indicate a closed port. Either response can show that the host is reachable.
+
+```bash
+sudo nmap -PS22,80,443 -sn 10.200.6.0/30
+```
+
+Privileged users can generally send raw SYN probes. Unprivileged operation may use a different connection method depending on the platform and Nmap configuration.
+
+## TCP ACK Ping
+
+Nmap sends TCP ACK probes to selected ports. Because an unsolicited ACK is not part of an established connection, a reachable TCP stack commonly responds with RST.
+
+```bash
+sudo nmap -PA22,80,443 -sn 10.200.6.0/30
+```
+
+Firewall behaviour affects whether these probes receive a response.
+
+---
+
+# UDP Host Discovery
+
+UDP probes can reveal whether a host is reachable. A closed UDP port may return an ICMP Port Unreachable message, while an open UDP port may not respond.
+
+```bash
+sudo nmap -PU53,161,162 -sn 10.200.6.0/30
+```
+
+A lack of response is ambiguous: the port may be open, the service may not reply, or a firewall may be filtering traffic.
+
+---
+
+# Reverse DNS
+
+Reverse DNS (rDNS) looks up a hostname associated with an IP address. It can sometimes reveal host roles or naming conventions, but records may be missing or outdated.
+
+```bash
+# Force reverse-DNS lookups
+nmap -R -sn TARGETS
+
+# Disable DNS resolution
+nmap -n -sn TARGETS
+
+# Use a specific DNS server
+nmap --dns-servers DNS_SERVER -sn TARGETS
+```
+
+- `-R`: resolve names for all targets, including hosts that may not be online
+- `-n`: skip DNS resolution
+- `--dns-servers`: specify DNS servers for Nmap to use
+
+DNS lookups can add time to a scan and should be treated as clues rather than definitive asset identification.
+
+---
+
+# Masscan
+
+Masscan is a high-speed port scanner that can scan large ranges quickly. It is more aggressive in its packet rate than many default Nmap scans, so use it carefully and only within authorized scope.
+
+```bash
+masscan 10.200.6.0/24 -p443
+masscan 10.200.6.0/24 -p80,443
+masscan 10.200.6.0/24 -p22-25
+```
+
+The `-p` option accepts a port, comma-separated list, or range. These examples scan for specified ports; they are not a replacement for every type of Nmap host-discovery scan.
+
+---
+
+# Quick Reference
+
+| Scan Type | Example |
+|---|---|
+| ARP discovery | `sudo nmap -PR -sn 10.200.6.0/24` |
+| ICMP Echo discovery | `sudo nmap -PE -sn 10.200.6.0/24` |
+| ICMP Timestamp discovery | `sudo nmap -PP -sn 10.200.6.0/24` |
+| ICMP Address Mask discovery | `sudo nmap -PM -sn 10.200.6.0/24` |
+| TCP SYN Ping | `sudo nmap -PS22,80,443 -sn 10.200.6.0/30` |
+| TCP ACK Ping | `sudo nmap -PA22,80,443 -sn 10.200.6.0/30` |
+| UDP Ping | `sudo nmap -PU53,161,162 -sn 10.200.6.0/30` |
+| List targets only | `nmap -sL TARGETS` |
+| Disable DNS lookups | `nmap -n -sn TARGETS` |
+| Force reverse-DNS lookups | `nmap -R -sn TARGETS` |
+
+---
+
+# Host Discovery Workflow
+
+```text
+Define Authorized Targets
+        ↓
+Choose Target List / Range / Subnet
+        ↓
+Select Discovery Probe
+        ↓
+ARP for Local Subnet
+        ↓
+ICMP / TCP / UDP for Other Cases
+        ↓
+Review Responses and DNS Names
+        ↓
+Record Live Hosts
+        ↓
+Run Port Scanning Only If Required
+```
+
+---
+
+# Key Takeaways
+
+- **Use `-sn` for host discovery only.** It prevents Nmap from continuing into a port scan.
+- **ARP is highly useful on the local subnet.** It often works even when ICMP Echo is blocked.
+- **Use more than one discovery technique when necessary.** Firewalls may block one probe but allow another.
+- **No response does not mean offline.** Filtering, routing, and service behaviour can affect results.
+- **TCP SYN and ACK probes rely on TCP responses** to infer whether a host is reachable.
+- **UDP discovery can be ambiguous.** An open UDP service may not respond to a probe.
+- **Reverse DNS may reveal naming clues**, but the data may be absent or inaccurate.
+- **Masscan is fast and aggressive.** Keep scans rate-aware and within authorized scope.
+
+---
+
+# Pentester Perspective
+
+Live host discovery is an early step in mapping an authorized network. First define the target scope, then select discovery probes appropriate to the network location and likely filtering. Compare results instead of relying on a single probe, document which hosts responded, and move to port scanning only when needed and permitted.
